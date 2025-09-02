@@ -39,8 +39,34 @@ const server = http.createServer((req, res) => {
 });
 
 
+
+// Serveur WebSocket natif avec la lib WebSocket
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws) => {
+  console.log('Nouvelle connexion WebSocket');
+
+  ws.on('message', (message) => {
+    try {
+      const { type, data } = JSON.parse(message);
+
+      ws.send(message);
+
+    } catch (e) {
+      console.log('Erreur JSON', e);
+      ws.send(JSON.stringify({ type: 'error', data: 'Message mal formaté' }));
+    }
+  });
+
+  ws.on('close', () => {
+         console.error('connection fermée');
+
+  });
+});
+
+
 // Démarrage du serveur http
-const PORT = 3000;
+const PORT = 8080;
 server.listen(PORT, () => {
   console.log(`Serveur lancé sur http://localhost:${PORT}`);
 });
