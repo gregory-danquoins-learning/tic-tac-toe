@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Partie en cours - Morpion</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .info {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+    }
+
+    .cell {
+      background-color: white;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .cell:hover {
+      background-color: #f9f9f9;
+    }
+
+    .status {
+      margin-top: 2rem;
+      font-weight: bold;
+    }
+
+    .button {
+      margin-top: 2rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <span id="playerName"></span> vs <span id="opponentName"></span><br />
+    <span id="turnInfo"></span>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="status" id="status"></div>
+
+  <button class="button" onclick="goBack()">Retour au lobby</button>
+
+  <script>
+    const playerName = localStorage.getItem("username");
+    if (!playerName) window.location.href = "/login.html";
+
+    const gameId = localStorage.getItem("gameId");
+    if (!gameId) window.location.href = "/lobby.html";
+
+    let socket;
+    let symbol;
+    let yourTurn = false;
+
+    document.getElementById("playerName").textContent = playerName;
+
+    function createBoard(board) {
+      const container = document.getElementById("board");
+      container.innerHTML = "";
+
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          cell.textContent = board[row][col];
+          if (board[row][col] === "") {
+            cell.addEventListener("click", () => play(row, col));
+          }
+          container.appendChild(cell);
+        }
+      }
+    }
+
+    function updateStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    function play(row, col) {
+      if (!yourTurn) return;
+      socket.send(JSON.stringify({
+        type: "play",
+        data: { gameId, row, col }
+      }));
+      yourTurn = false;
+    }
+
+    function connectWebSocket() {
+      socket = new WebSocket(`ws://${location.host}`);
+
+      socket.addEventListener("open", () => {
+        socket.send(JSON.stringify({ type: "join_game", data: { name: playerName, gameId } }));
+      });
+
+      socket.addEventListener("message", (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === "start_game") {
+          symbol = msg.data.symbol;
+          document.getElementById("opponentName").textContent = msg.data.opponent;
+          yourTurn = msg.data.yourTurn;
+          document.getElementById("turnInfo").textContent = yourTurn
+            ? "C'est votre tour"
+            : "Tour de l'adversaire";
+          createBoard(msg.data.board);
+        }
+
+        if (msg.type === "update") {
+          yourTurn = msg.data.yourTurn;
+          document.getElementById("turnInfo").textContent = yourTurn
+            ? "C'est votre tour"
+            : "Tour de l'adversaire";
+          createBoard(msg.data.board);
+        }
+
+        if (msg.type === "game_over") {
+          createBoard(msg.data.board);
+          if (msg.data.winner === "egality") {
+            updateStatus("Match nul !");
+          } else if (msg.data.winner === playerName) {
+            updateStatus("🎉 Vous avez gagné !");
+          } else {
+            updateStatus("😞 Vous avez perdu !");
+          }
+          yourTurn = false;
+          document.getElementById("turnInfo").textContent = "Partie terminée";
+        }
+      });
+
+      socket.addEventListener("close", () => {
+        updateStatus("Connexion perdue");
+      });
+    }
+
+    function goBack() {
+      localStorage.removeItem("gameId");
+      window.location.href = "/lobby.html";
+    }
+
+    connectWebSocket();
+  </script>
+</body>
+</html>
