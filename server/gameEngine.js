@@ -55,7 +55,7 @@ function joinGame(gameId, ws, playerName) {
     game.names.push(playerName);
   }
 
-  // Démarrer si on a 2 joueurs actifs 
+  // Démarrer si on a 2 joueurs 
   if (game.players.length === 2) {
     game.status = "playing";
 
