@@ -1,0 +1,48 @@
+
+    body {
+      font-family: sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .username {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 1rem;
+    }
+
+    button:hover {
+      background-color: #1565c0;
+    }
+
+    .games {
+      margin-top: 2rem;
+    }
+
+    .game-item {
+      padding: 1rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }

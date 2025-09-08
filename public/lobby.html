@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lobby - Morpion</title>
+  <link rel="stylesheet" href="lobby.css">
+  
+</head>
+<body>
+  <div class="header">
+    <div class="username">Connecté en tant que <span id="username"></span></div>
+    <div>
+      <button onclick="createGame()">Créer une partie</button>
+      <button onclick="disconnect()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="games">
+    <h2>Parties disponibles</h2>
+    <div id="gameList"></div>
+  </div>
+
+  <script>
+    let socket;
+    const name = localStorage.getItem("username");
+
+    if (!name) {
+      window.location.href = "/login.html";
+    }
+
+    document.getElementById("username").textContent = name;
+
+    function connectWebSocket() {
+      socket = new WebSocket(`ws://${location.host}`);
+
+      socket.addEventListener("open", () => {
+        socket.send(JSON.stringify({ type: "lobby_join", data: { name } }));
+      });
+
+      socket.addEventListener("message", (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === "game_list") {
+          renderGameList(msg.data);
+        }
+
+        if (msg.type === "joined") {
+          localStorage.setItem("gameId", msg.data);
+          window.location.href = "/game.html";
+        }
+      });
+
+      socket.addEventListener("close", () => {
+        console.log("WebSocket fermé");
+      });
+    }
+
+    function renderGameList(games) {
+  const list = document.getElementById("gameList");
+  list.innerHTML = "";
+
+  if (games.length === 0) {
+    list.innerHTML = "<p>Aucune partie disponible</p>";
+    return;
+  }
+
+  games.forEach((game) => {
+    const div = document.createElement("div");
+    div.className = "game-item";
+    div.innerHTML = `
+      <span>Partie de <strong>${game.creator}</strong> (ID: ${game.id})</span>
+      <button onclick="joinGame('${game.id}')">Rejoindre</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+
+    function createGame() {
+      socket.send(JSON.stringify({ type: "create_game", data: { name } }));
+    }
+
+    function joinGame(gameId) {
+      socket.send(JSON.stringify({ type: "join_game", data: { name, gameId } }));
+    }
+
+    function disconnect() {
+      socket.close();
+      localStorage.removeItem("username");
+      window.location.href = "/login.html";
+    }
+
+    connectWebSocket();
+  </script>
+</body>
+</html>
